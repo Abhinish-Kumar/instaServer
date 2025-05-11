@@ -18,7 +18,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
-    origin: "https://abhinish-kumar.github.io/instaFrontend",
+    origin: "https://abhinish-kumar.github.io",
     credentials: true,
   })
 );
