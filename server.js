@@ -179,12 +179,12 @@ app.post("/api/register", async (req, res) => {
       expiresIn: "1d",
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    });
+   res.cookie("token", token, {
+  httpOnly: true,
+  secure: true, // Must be true for HTTPS
+  sameSite: "none", // Required for cross-site cookies
+  maxAge: 24 * 60 * 60 * 1000,
+});
 
     res.status(201).json({
       message: "Registration successful",
@@ -224,11 +224,11 @@ app.post("/api/login", async (req, res) => {
     });
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    });
+  httpOnly: true,
+  secure: true, // Must be true for HTTPS
+  sameSite: "none", // Required for cross-site cookies
+  maxAge: 24 * 60 * 60 * 1000,
+});
 
     res.json({
       message: "Login successful",
@@ -248,9 +248,10 @@ app.post("/api/login", async (req, res) => {
 
 app.post("/api/logout", (req, res) => {
   res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
+   httpOnly: true,
+  secure: true, // Must be true for HTTPS
+  sameSite: "none", // Required for cross-site cookies
+  maxAge: 24 * 60 * 60 * 1000,
   });
   res.json({ message: "Logout successful" });
 });
