@@ -59,7 +59,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect("mongodb://<username>:<password>@cluster0-shard-00-00.abcde.mongodb.net:27017,cluster0-shard-00-01.abcde.mongodb.net:27017,cluster0-shard-00-02.abcde.mongodb.net:27017/mydb?ssl=true&replicaSet=atlas-xxx-shard-0&authSource=admin&retryWrites=true&w=majority
+    await mongoose.connect("mongodb://newUser123:87654321@cluster0-shard-00-00.abcde.mongodb.net:27017,cluster0-shard-00-01.abcde.mongodb.net:27017,cluster0-shard-00-02.abcde.mongodb.net:27017/mydb?ssl=true&replicaSet=atlas-xxx-shard-0&authSource=admin&retryWrites=true&w=majority
 ");
     console.log("Connected to database");
   } catch (err) {
