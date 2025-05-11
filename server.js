@@ -59,7 +59,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect("mongodb+srv://newUser123:87654321@cluster0.mongodb.net/users?retryWrites=true&w=majority");
     console.log("Connected to database");
   } catch (err) {
     console.error("Database connection error:", err);
