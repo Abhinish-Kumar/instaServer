@@ -18,7 +18,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
-    origin: "https://abhinish-kumar.github.io",
+    origin: "https://abhinish-kumar.github.io/instaFrontend",
     credentials: true,
   })
 );
@@ -151,7 +151,7 @@ const authenticate = async (req, res, next) => {
 };
 
 // Routes
-app.post("/instaServer/api/register", async (req, res) => {
+app.post("/api/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -201,7 +201,7 @@ app.post("/instaServer/api/register", async (req, res) => {
   }
 });
 
-app.post("/instaServer/api/login", async (req, res) => {
+app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -246,7 +246,7 @@ app.post("/instaServer/api/login", async (req, res) => {
   }
 });
 
-app.post("/instaServer/api/logout", (req, res) => {
+app.post("/api/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -255,7 +255,7 @@ app.post("/instaServer/api/logout", (req, res) => {
   res.json({ message: "Logout successful" });
 });
 
-app.get("/instaServer/api/dashboard", authenticate, async (req, res) => {
+app.get("/api/dashboard", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
       .select("-password")
@@ -278,7 +278,7 @@ app.get("/instaServer/api/dashboard", authenticate, async (req, res) => {
 
 // Profile routes
 app.post(
-  "/instaServer/api/users/updateProfilePic",
+  "/api/users/updateProfilePic",
   authenticate,
   upload.single("profilePhoto"),
   async (req, res) => {
@@ -315,7 +315,7 @@ app.post(
   }
 );
 
-app.put("/instaServer/api/users/updateBio", authenticate, async (req, res) => {
+app.put("/api/users/updateBio", authenticate, async (req, res) => {
   try {
     const { bio } = req.body;
     const user = await User.findByIdAndUpdate(
@@ -336,7 +336,7 @@ app.put("/instaServer/api/users/updateBio", authenticate, async (req, res) => {
 
 // Posts routes
 app.post(
-  "/instaServer/api/posts",
+  "/api/posts",
   authenticate,
   upload.single("image"),
   async (req, res) => {
@@ -376,7 +376,7 @@ app.post(
   }
 );
 
-app.get("/instaServer/api/posts", authenticate, async (req, res) => {
+app.get("/api/posts", authenticate, async (req, res) => {
   try {
     const posts = await Post.find()
       .populate("user", "username profilePhoto")
@@ -390,128 +390,116 @@ app.get("/instaServer/api/posts", authenticate, async (req, res) => {
   }
 });
 
-app.post(
-  "/instaServer/api/posts/:postId/like",
-  authenticate,
-  async (req, res) => {
-    try {
-      const post = await Post.findById(req.params.postId);
-      if (!post) {
-        return res.status(404).json({ error: "Post not found" });
-      }
-
-      const isLiked = post.likes.includes(req.user._id);
-
-      if (isLiked) {
-        await Post.findByIdAndUpdate(req.params.postId, {
-          $pull: { likes: req.user._id },
-        });
-      } else {
-        await Post.findByIdAndUpdate(req.params.postId, {
-          $push: { likes: req.user._id },
-        });
-      }
-
-      const updatedPost = await Post.findById(req.params.postId)
-        .populate("user", "username profilePhoto")
-        .populate("likes", "username profilePhoto");
-
-      res.json({
-        message: isLiked ? "Post unliked" : "Post liked",
-        post: updatedPost,
-      });
-    } catch (err) {
-      console.error("Like post error:", err);
-      res.status(500).json({ error: "Internal server error" });
+app.post("/api/posts/:postId/like", authenticate, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
     }
+
+    const isLiked = post.likes.includes(req.user._id);
+
+    if (isLiked) {
+      await Post.findByIdAndUpdate(req.params.postId, {
+        $pull: { likes: req.user._id },
+      });
+    } else {
+      await Post.findByIdAndUpdate(req.params.postId, {
+        $push: { likes: req.user._id },
+      });
+    }
+
+    const updatedPost = await Post.findById(req.params.postId)
+      .populate("user", "username profilePhoto")
+      .populate("likes", "username profilePhoto");
+
+    res.json({
+      message: isLiked ? "Post unliked" : "Post liked",
+      post: updatedPost,
+    });
+  } catch (err) {
+    console.error("Like post error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-);
+});
 
-app.post(
-  "/instaServer/api/posts/:postId/comment",
-  authenticate,
-  async (req, res) => {
-    try {
-      const { text } = req.body;
-      if (!text) {
-        return res.status(400).json({ error: "Comment text is required" });
-      }
+app.post("/api/posts/:postId/comment", authenticate, async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: "Comment text is required" });
+    }
 
-      const post = await Post.findByIdAndUpdate(
-        req.params.postId,
-        {
-          $push: {
-            comments: {
-              user: req.user._id,
-              text,
-            },
+    const post = await Post.findByIdAndUpdate(
+      req.params.postId,
+      {
+        $push: {
+          comments: {
+            user: req.user._id,
+            text,
           },
         },
-        { new: true }
-      ).populate("comments.user", "username profilePhoto");
+      },
+      { new: true }
+    ).populate("comments.user", "username profilePhoto");
 
-      if (!post) {
-        return res.status(404).json({ error: "Post not found" });
-      }
-
-      res.json({
-        message: "Comment added successfully",
-        comments: post.comments,
-      });
-    } catch (err) {
-      console.error("Add comment error:", err);
-      res.status(500).json({ error: "Internal server error" });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
     }
+
+    res.json({
+      message: "Comment added successfully",
+      comments: post.comments,
+    });
+  } catch (err) {
+    console.error("Add comment error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-);
+});
 
 // Follow routes
-app.post(
-  "/instaServer/api/follow/:targetUserId",
-  authenticate,
-  async (req, res) => {
-    try {
-      const targetUserId = req.params.targetUserId;
+app.post("/api/follow/:targetUserId", authenticate, async (req, res) => {
+  try {
+    const targetUserId = req.params.targetUserId;
 
-      if (req.user._id.toString() === targetUserId) {
-        return res.status(400).json({ error: "Cannot follow yourself" });
-      }
-
-      const targetUser = await User.findById(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      const user = await User.findById(req.user._id);
-      const isFollowing = user.following.includes(targetUserId);
-
-      if (isFollowing) {
-        // Unfollow
-        user.following.pull(targetUserId);
-        targetUser.followers.pull(req.user._id);
-      } else {
-        // Follow
-        user.following.push(targetUserId);
-        targetUser.followers.push(req.user._id);
-      }
-
-      await Promise.all([user.save(), targetUser.save()]);
-
-      res.json({
-        message: isFollowing
-          ? "Unfollowed successfully"
-          : "Followed successfully",
-        isFollowing: !isFollowing,
-        followersCount: targetUser.followers.length,
-      });
-    } catch (err) {
-      console.error("Follow error:", err);
-      res.status(500).json({ error: "Internal server error" });
+    if (req.user._id.toString() === targetUserId) {
+      return res.status(400).json({ error: "Cannot follow yourself" });
     }
-  }
-);
 
-app.get("/instaServer/api/following", authenticate, async (req, res) => {
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = await User.findById(req.user._id);
+    const isFollowing = user.following.includes(targetUserId);
+
+    if (isFollowing) {
+      // Unfollow
+      user.following.pull(targetUserId);
+      targetUser.followers.pull(req.user._id);
+    } else {
+      // Follow
+      user.following.push(targetUserId);
+      targetUser.followers.push(req.user._id);
+    }
+
+    await Promise.all([user.save(), targetUser.save()]);
+
+    res.json({
+      message: isFollowing
+        ? "Unfollowed successfully"
+        : "Followed successfully",
+      isFollowing: !isFollowing,
+      followersCount: targetUser.followers.length,
+    });
+  } catch (err) {
+    console.error("Follow error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/api/following", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
       .populate("following", "username profilePhoto")
@@ -524,7 +512,7 @@ app.get("/instaServer/api/following", authenticate, async (req, res) => {
   }
 });
 
-app.get("/instaServer/api/followers", authenticate, async (req, res) => {
+app.get("/api/followers", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
       .populate("followers", "username profilePhoto")
@@ -538,7 +526,7 @@ app.get("/instaServer/api/followers", authenticate, async (req, res) => {
 });
 
 // Search users
-app.get("/instaServer/api/users/search", authenticate, async (req, res) => {
+app.get("/api/users/search", authenticate, async (req, res) => {
   try {
     const { query } = req.query;
     if (!query) {
@@ -560,7 +548,7 @@ app.get("/instaServer/api/users/search", authenticate, async (req, res) => {
 });
 
 // Get user profile
-app.get("/instaServer/api/users/:userId", authenticate, async (req, res) => {
+app.get("/api/users/:userId", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId)
       .select("-password")
